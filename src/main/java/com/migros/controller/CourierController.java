@@ -1,10 +1,12 @@
 package com.migros.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.migros.dto.request.CourierEntranceCountRequest;
@@ -24,12 +26,15 @@ public class CourierController {
 	}
 
 	@PutMapping(name = "/{courierId}")
-	public void countEntrance(@RequestBody CourierEntranceCountRequest request, @PathVariable int courierId) {
+	@ResponseStatus(code = HttpStatus.OK)
+	public void countEntrance(@RequestBody CourierEntranceCountRequest request,
+			@PathVariable("courierId") int courierId) {
 		courierService.countEntrance(request, courierId);
 	}
 
-	@GetMapping
-	public Double getTotalTravelDistance(int courierId) {
+	@GetMapping(name = "/{courierId}")
+	@ResponseStatus(code = HttpStatus.OK)
+	public Double getTotalTravelDistance(@PathVariable("courierId") int courierId) {
 		return courierService.getTotalTravelDistance(courierId);
 	}
 }

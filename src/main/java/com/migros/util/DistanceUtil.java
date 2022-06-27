@@ -8,7 +8,7 @@ public class DistanceUtil {
 
 	}
 
-	public static double distance(Point point1, Point point2) {
+	public static double calculateDistance(Point point1, Point point2) {
 
 		final int R = 6371; // Radius of the earth
 

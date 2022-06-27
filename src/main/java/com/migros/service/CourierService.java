@@ -11,6 +11,7 @@ import com.migros.dto.request.CourierEntranceCountRequest;
 import com.migros.exception.CourierTrakingException;
 import com.migros.model.Courier;
 import com.migros.model.CourierLog;
+import com.migros.model.Order;
 import com.migros.model.Point;
 import com.migros.model.Store;
 import com.migros.repository.CourierLogRepository;
@@ -43,22 +44,29 @@ public class CourierService implements MyBean {
 	private StoreRepository storeRepository;
 
 	@Autowired
-	private CourierLogRepository courierStoreRepository;
+	private CourierLogRepository courierLogRepository;
 
 	private static final Double STORE_DISTANCE = 100.0;
 
 	private static final long ONE_MINUTE = 1;
 
-	public Double getTotalTravelDistance(int courierId) {
+	public double getTotalTravelDistance(int courierId) {
 		Courier courier = validateCourier(courierId);
 
-		return null;
+		List<Point> ordersAddress = courier.getOrderList().stream().map(Order::getOrderAddress).toList();
+
+		double totalTravelDistance = 0;
+		for (Point orderAddress : ordersAddress) {
+			totalTravelDistance += DistanceUtil.calculateDistance(orderAddress, courier.getStore().getPoint());
+		}
+
+		return totalTravelDistance;
 	}
 
 	public void countEntrance(CourierEntranceCountRequest request, int courierId) {
 		Courier courier = validateCourier(courierId);
 
-		List<Store> stores = storeRepository.findAllStores();
+		List<Store> stores = storeRepository.findAll();
 
 		stores.stream().forEach(store -> checkDistance(request, courier, store));
 
@@ -75,7 +83,7 @@ public class CourierService implements MyBean {
 	}
 
 	private void checkDistance(CourierEntranceCountRequest request, Courier courier, Store store) {
-		double distance = DistanceUtil.distance(store.getPoint(),
+		double distance = DistanceUtil.calculateDistance(store.getPoint(),
 				new Point(request.getLatitude(), request.getLongitude()));
 
 		saveCourierLog(request, courier, store, distance);
@@ -85,13 +93,13 @@ public class CourierService implements MyBean {
 		if (STORE_DISTANCE <= distance) {
 			log.info("countEntrance :: courierId:{} entraned to store name: {}", courier.getId(), store.getName());
 			Sort sort = Sort.by(Sort.Direction.ASC, "date");
-			CourierLog courierLog = courierStoreRepository.findOneByCourierId(courier.getId(), sort);
+			CourierLog courierLog = courierLogRepository.findOneByCourierId(courier.getId(), sort);
 
 			long differenceMinute = DateUtil.calculateDifferenceMinutes(courierLog.getEntranceTime(),
 					request.getEntranceTime());
 
 			if (ONE_MINUTE < differenceMinute) {
-				courierStoreRepository.save(new CourierLog(courier, store, LocalDateTime.now()));
+				courierLogRepository.save(new CourierLog(courier, store, LocalDateTime.now()));
 				log.info("countEntrance :: courierId:{} entraned to store name: {} saved", courier.getId(),
 						store.getName());
 			}
